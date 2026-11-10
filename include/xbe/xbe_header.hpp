@@ -27,6 +27,10 @@ constexpr uint32_t XBE_DEBUG_THUNK_XOR_KEY        = 0xEFB1F152;
 // Compatibility aliases
 constexpr uint32_t kRetailEntryPointKey = XBE_RETAIL_ENTRY_POINT_XOR_KEY;
 constexpr uint32_t kDebugEntryPointKey  = XBE_DEBUG_ENTRY_POINT_XOR_KEY;
+constexpr uint32_t XOR_EP_RETAIL        = XBE_RETAIL_ENTRY_POINT_XOR_KEY;
+constexpr uint32_t XOR_KT_RETAIL        = XBE_RETAIL_THUNK_XOR_KEY;
+constexpr uint32_t XOR_EP_DEBUG         = XBE_DEBUG_ENTRY_POINT_XOR_KEY;
+constexpr uint32_t XOR_KT_DEBUG         = XBE_DEBUG_THUNK_XOR_KEY;
 
 // ============================================================================
 // Initialization Flags

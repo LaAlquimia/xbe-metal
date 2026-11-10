@@ -27,9 +27,11 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|AppleClang|GNU")
     add_compile_options(-Wall -Wextra -Wpedantic -Wno-unused-parameter)
 endif()
 
-# Core static library: XBE Parser
+# Core static library: XBE Parser + Static Recompiler + Memory & HLE Kernel
 add_library(xbe_core STATIC
     src/xbe/xbe_parser.cpp
+    src/recompiler/x86_decoder.cpp
+    src/recompiler/cpp_emitter.cpp
     src/runtime/core/memory.cpp
     src/runtime/core/kernel.cpp
 )
@@ -65,11 +67,17 @@ elseif(TARGET_PLATFORM STREQUAL "Wasm")
     target_link_libraries(xbe_runtime PUBLIC xbe_core)
 endif()
 
-# CLI Tool: xbe-dump
+# CLI Tool: xbe-dump (Header, Certificate, Sections & Thunk Inspector)
 add_executable(xbe-dump
     tools/xbe-dump/main.cpp
 )
 target_link_libraries(xbe-dump PRIVATE xbe_core)
+
+# CLI Tool: xbe-recomp (x86-32 to C++20 Static Recompiler)
+add_executable(xbe-recomp
+    tools/xbe-recomp/main.cpp
+)
+target_link_libraries(xbe-recomp PRIVATE xbe_core)
 
 # Target: xbe-runner (Main application launcher)
 if(TARGET_PLATFORM STREQUAL "macOS")
@@ -86,4 +94,14 @@ elseif(TARGET_PLATFORM STREQUAL "Wasm")
         SUFFIX ".html"
         LINK_FLAGS "-s WASM=1 -s USE_WEBGPU=1 -s EXPORTED_RUNTIME_METHODS=['ccall','cwrap'] --shell-file ${CMAKE_CURRENT_SOURCE_DIR}/web/shell.html"
     )
+endif()
+
+# End-to-End Test Suite (CTest)
+if(NOT EMSCRIPTEN)
+    enable_testing()
+    add_executable(test_xbe_pipeline
+        tests/test_xbe_pipeline.cpp
+    )
+    target_link_libraries(test_xbe_pipeline PRIVATE xbe_core)
+    add_test(NAME XbeRecompilerPipelineTest COMMAND test_xbe_pipeline)
 endif()

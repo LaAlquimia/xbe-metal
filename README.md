@@ -1,11 +1,28 @@
 # xbe-metal 🍏⚙️
 
-> **Static Recompiler & Multiplatform Runtime for Original Xbox Binaries**  
-> Targeting **Apple Silicon (macOS / Metal)** and **WebAssembly (WebGPU / Canvas)**.
+> **Static Recompiler & Multiplatform Runtime for Original Xbox Binaries (`.xbe`)**  
+> Ahead-of-Time `x86-32` ➔ `C++20` translation targeting **Apple Silicon (macOS / Metal)** and **WebAssembly (WebGPU / Canvas)**.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Platform: macOS (Apple Silicon)](https://img.shields.io/badge/Platform-macOS%20ARM64-black?logo=apple)](https://apple.com)
-[![Platform: WebAssembly](https://img.shields.io/badge/Platform-WebAssembly%20%2F%20WebGPU-654FF0?logo=webassembly)](https://webassembly.org)
+<!-- Row 1: CI, Codespaces, Release & License -->
+[![CI](https://github.com/LaAlquimia/xbe-metal/actions/workflows/ci.yml/badge.svg)](https://github.com/LaAlquimia/xbe-metal/actions/workflows/ci.yml)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/LaAlquimia/xbe-metal)
+[![Version](https://img.shields.io/badge/version-0.1.0--alpha-00ff66?style=flat-square)](https://github.com/LaAlquimia/xbe-metal/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://github.com/LaAlquimia/xbe-metal/pulls)
+
+<!-- Row 2: Languages, Build System & Toolchains -->
+[![Standard: C++20](https://img.shields.io/badge/C%2B%2B-20-00599C?style=flat-square&logo=cplusplus&logoColor=white)](https://en.cppreference.com/w/cpp/20)
+[![Objective-C++](https://img.shields.io/badge/Objective--C%2B%2B-Metal%20Bridge-333333?style=flat-square&logo=apple&logoColor=white)](https://developer.apple.com/metal/)
+[![CMake: 3.20+](https://img.shields.io/badge/CMake-3.20%2B-064F8C?style=flat-square&logo=cmake&logoColor=white)](https://cmake.org/)
+[![Compiler: Apple Clang](https://img.shields.io/badge/Compiler-Apple%20Clang%20%2F%20LLVM-262D3A?style=flat-square&logo=llvm&logoColor=white)](https://clang.llvm.org/)
+[![Toolchain: Emscripten](https://img.shields.io/badge/Toolchain-Emscripten-654FF0?style=flat-square&logo=webassembly&logoColor=white)](https://emscripten.org/)
+
+<!-- Row 3: Architectures, Platforms & GPU Backends -->
+[![Guest ISA: x86-32 Pentium III](https://img.shields.io/badge/Guest%20ISA-x86--32%20(Pentium%20III)-107C10?style=flat-square&logo=intel&logoColor=white)](#%EF%B8%8F-architecture)
+[![Host ISA: ARM64 Apple Silicon](https://img.shields.io/badge/Host%20ISA-ARM64%20(M1--M5)-000000?style=flat-square&logo=apple&logoColor=white)](#%EF%B8%8F-architecture)
+[![GPU: Apple Metal](https://img.shields.io/badge/GPU%20Backend-Apple%20Metal%20(MSL)-555555?style=flat-square&logo=apple&logoColor=white)](#%EF%B8%8F-architecture)
+[![GPU: WebGPU / Canvas](https://img.shields.io/badge/Web%20Backend-WebGPU%20%2F%20Canvas-FF5722?style=flat-square&logo=html5&logoColor=white)](#%EF%B8%8F-architecture)
+[![Target: WebAssembly](https://img.shields.io/badge/Target-WebAssembly%20(Wasm32)-654FF0?style=flat-square&logo=webassembly&logoColor=white)](#3-building-for-webassembly-webgpu)
 
 ---
 
@@ -14,8 +31,8 @@
 `xbe-metal` is a high-performance static recompilation framework and runtime environment designed to take original Xbox executables (`.xbe`) and run them natively on modern devices without traditional emulation overhead.
 
 Instead of interpreting x86 machine code inside an emulator VM at runtime, `xbe-metal`:
-1. **Parses & Analyzes** the Xbox executable (`.xbe`), extracting sections, headers, and certificates.
-2. **Statically Recompiles** x86 (Intel Pentium III) machine code ahead-of-time into clean, portable C++20.
+1. **Parses & Analyzes** the Xbox executable (`.xbe`), decrypting Retail/Debug XOR keys and extracting sections, headers, certificates, and kernel import thunks.
+2. **Statically Recompiles** x86-32 (Intel Pentium III) machine code ahead-of-time into clean, portable C++20 translation units (`xbe-recomp`).
 3. **Executes on Modern Platforms** with a lightweight high-level emulation (HLE) runtime:
    - **macOS (Apple Silicon):** Native ARM64 binary with direct **Apple Metal** graphics and **CoreAudio**.
    - **WebAssembly (Wasm):** In-browser execution powered by **WebGPU** / HTML5 Canvas and **WebAudio**.
@@ -26,7 +43,7 @@ Instead of interpreting x86 machine code inside an emulator VM at runtime, `xbe-
 
 ```
                   ┌──────────────────────┐
-                  │    Game (default.xbe)│
+                  │   Game (default.xbe) │
                   └──────────┬───────────┘
                              │
                              ▼
@@ -37,49 +54,57 @@ Instead of interpreting x86 machine code inside an emulator VM at runtime, `xbe-
                              │
                              ▼
                   ┌──────────────────────┐
-                  │     recompiler       │
-                  │   (x86 ➔ C++20 AST)  │
+                  │     xbe-recomp       │
+                  │   (x86 ➔ C++20 AOT)  │
                   └──────────┬───────────┘
                              │
             ┌────────────────┴────────────────┐
             ▼                                 ▼
    [ Native macOS Build ]            [ WebAssembly Build ]
    - Architecture: ARM64             - Architecture: wasm32 / wasm64
-   - Graphics: Metal                 - Graphics: WebGPU / Canvas
-   - Audio: CoreAudio                - Audio: WebAudio
+   - Graphics: Metal (MSL)           - Graphics: WebGPU / Canvas
+   - Memory: 64MB/128MB Unified      - Memory: Shared / Linear Wasm
    - Compiler: Apple Clang           - Compiler: Emscripten (emcc)
 ```
 
 ---
 
-## 🚀 Building & Running
+## 🚀 Quick Start (macOS / Apple Silicon)
 
-### Requirements
+### 1. Build & Run the Automated Pipeline Test
 
-* **macOS:**
-  * Xcode Command Line Tools (`xcode-select --install`)
-  * CMake 3.20+ (`brew install cmake`)
-  * macOS 12.0+ with Apple Silicon (M1/M2/M3/M4) recommended
-
-* **WebAssembly (Optional for Web builds):**
-  * Emscripten SDK (`emsdk`)
-
-### 1. Building for Native macOS (Apple Silicon + Metal)
+You don't need any commercial game files to test `xbe-metal`. The repository includes a clean-room synthetic `.xbe` generator and end-to-end test suite:
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/xbe-metal.git
+git clone https://github.com/LaAlquimia/xbe-metal.git
 cd xbe-metal
 
 # Configure and compile
 cmake -B build -DTARGET_PLATFORM=macOS
 cmake --build build -j$(sysctl -n hw.ncpu)
 
-# Run the XBE inspector CLI tool
-./build/tools/xbe-dump path/to/default.xbe
+# Run the end-to-end test suite (XBE Parser + x86 Decoder + C++ Emitter + HLE Kernel)
+ctest --test-dir build --output-on-failure -V
 ```
 
-### 2. Building for WebAssembly (WebGPU)
+### 2. Inspect & Recompile an `.xbe` Executable
+
+```bash
+# Generate a clean-room test XBE binary
+./build/test_xbe_pipeline --write-sample build/homebrew_hello.xbe
+
+# 1. Inspect headers, sections, certificate, and kernel imports
+./build/xbe-dump --imports build/homebrew_hello.xbe
+
+# 2. Disassemble x86 instructions and emit C++20 source code
+./build/xbe-recomp --disasm build/homebrew_hello.xbe -o build/recompiled_entry.cpp
+
+# 3. Launch the native Apple Metal runtime
+./build/xbe-runner build/homebrew_hello.xbe
+```
+
+### 3. Building for WebAssembly (WebGPU)
 
 ```bash
 # Activate Emscripten environment
@@ -89,9 +114,9 @@ source /path/to/emsdk/emsdk_env.sh
 emcmake cmake -B build-web -DTARGET_PLATFORM=Wasm
 cmake --build build-web
 
-# Serve locally
+# Or preview the standalone Web Portal immediately:
 npx serve web/
-# Open http://localhost:3000 to launch the in-browser runner
+# Open http://localhost:3000 and drag & drop any .xbe file
 ```
 
 ---
@@ -100,31 +125,35 @@ npx serve web/
 
 ```
 xbe-metal/
+├── .github/workflows/ci.yml    # Automated macOS (Metal) & WebAssembly CI
 ├── CMakeLists.txt              # Root CMake build configuration
 ├── LICENSE                     # MIT License
 ├── README.md                   # Project documentation
 ├── include/
 │   ├── xbe/                    # XBE binary structures and parser interfaces
+│   ├── recompiler/             # x86-32 instruction decoder & C++20 AOT emitter
 │   └── runtime/
-│       ├── core/               # Memory map, threads, sync, kernel HLE
-│       ├── gpu/                # Cross-platform GPU abstraction (IRenderDevice)
-│       │   ├── metal/          # Apple Metal backend (macOS)
-│       │   └── webgpu/         # WebGPU backend (WebAssembly)
-│       ├── audio/              # CoreAudio & WebAudio backends
-│       └── io/                 # Virtual File System (VFS) & Gamepad input
+│       ├── core/               # 64MB/128MB unified memory map & kernel HLE
+│       └── gpu/                # Cross-platform GPU abstraction (IRenderDevice)
+│           ├── metal/          # Apple Metal backend (Objective-C++ / MSL)
+│           └── webgpu/         # WebGPU / Canvas backend (WebAssembly)
 ├── src/
 │   ├── xbe/                    # XBE parser implementation
-│   ├── recompiler/             # Ahead-of-time code translation engine
-│   └── runtime/                # HLE implementation files
+│   ├── recompiler/             # Ahead-of-time x86 ➔ C++20 translation engine
+│   └── runtime/                # Memory, Kernel HLE & GPU implementation files
 ├── tools/
-│   └── xbe-dump/               # CLI inspection tool for .xbe files
+│   ├── xbe-dump/               # CLI inspection tool for .xbe files
+│   └── xbe-recomp/             # CLI ahead-of-time x86 to C++20 recompiler
+├── tests/
+│   └── test_xbe_pipeline.cpp   # End-to-end test suite & synthetic XBE builder
 └── web/
-    ├── index.html              # WebAssembly in-browser runner UI
-    └── web_runner.js           # JS bridge for WebGPU / Canvas
+    ├── index.html              # Standalone browser portal & drag-and-drop analyzer
+    ├── shell.html              # Emscripten WebGPU shell template
+    └── web_runner.js           # Client-side XBE parser & WebGPU/Canvas bridge
 ```
 
 ---
 
 ## ⚖️ Legal Disclaimer
 
-`xbe-metal` is an independent, clean-room educational and preservation research project. It does **not** contain any proprietary Microsoft Xbox BIOS, SDK, or copyrighted game code. Users must supply their own legally dumped games. Xbox is a registered trademark of Microsoft Corporation.
+`xbe-metal` is an independent, clean-room educational and preservation research project. It does **not** contain any proprietary Microsoft Xbox BIOS, SDK, or copyrighted game code. Users must supply their own legally dumped games. Xbox is a registered trademark of Microsoft Corporation. Apple and Metal are trademarks of Apple Inc.

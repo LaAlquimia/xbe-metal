@@ -71,11 +71,48 @@ void XboxKernel::install_thunks(XboxMemory& memory, uint32_t thunk_table_va) {
 }
 
 void XboxKernel::register_default_handlers() {
+    auto dbg_print_wrapper = [this](XboxMemory& memory, const std::vector<uint32_t>& args) -> uint32_t {
+        if (!args.empty() && m_debug_sink) {
+            uint32_t fmt_ptr = args[0];
+            std::string fmt_str = memory.read_string(fmt_ptr, 1024);
+            std::string output;
+            size_t arg_idx = 1;
+            for (size_t i = 0; i < fmt_str.size(); ++i) {
+                if (fmt_str[i] == '%' && (i + 1) < fmt_str.size()) {
+                    char specifier = fmt_str[i + 1];
+                    if (specifier == 's' && arg_idx < args.size()) {
+                        output += memory.read_string(args[arg_idx++], 512);
+                        i++;
+                        continue;
+                    } else if ((specifier == 'd' || specifier == 'i') && arg_idx < args.size()) {
+                        output += std::to_string(static_cast<int32_t>(args[arg_idx++]));
+                        i++;
+                        continue;
+                    } else if ((specifier == 'x' || specifier == 'X' || specifier == 'p') && arg_idx < args.size()) {
+                        char hex_buf[32];
+                        std::snprintf(hex_buf, sizeof(hex_buf), "0x%X", args[arg_idx++]);
+                        output += hex_buf;
+                        i++;
+                        continue;
+                    } else if (specifier == '%') {
+                        output += '%';
+                        i++;
+                        continue;
+                    }
+                }
+                output += fmt_str[i];
+            }
+            m_debug_sink(output);
+        }
+        return hle_DbgPrint(memory, args);
+    };
+
     register_export(1,   "AvGetSavedDataAddress",          hle_AvGetSavedDataAddress);
     register_export(2,   "AvSendTVEncoderOption",          hle_AvSendTVEncoderOption);
     register_export(8,   "AvSetDisplayMode",               hle_AvSetDisplayMode);
-    register_export(12,  "DbgPrint",                       hle_DbgPrint);
+    register_export(12,  "DbgPrint",                       dbg_print_wrapper);
     register_export(13,  "DbgPrompt",                      hle_DbgPrompt);
+    register_export(14,  "DbgPrint",                       dbg_print_wrapper);
     register_export(49,  "HalReturnToFirmware",            hle_HalReturnToFirmware);
     register_export(55,  "HalWriteSMBusValue",             hle_HalWriteSMBusValue);
     register_export(56,  "HalReadSMBusValue",              hle_HalReadSMBusValue);

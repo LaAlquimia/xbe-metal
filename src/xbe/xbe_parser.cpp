@@ -263,6 +263,7 @@ static std::string lookup_kernel_ordinal_name(uint32_t ordinal) {
         case 9:   return "AvSetSavedDataAddress";
         case 12:  return "DbgPrint";
         case 13:  return "DbgPrompt";
+        case 14:  return "DbgPrint";
         case 49:  return "HalReturnToFirmware";
         case 55:  return "HalWriteSMBusValue";
         case 56:  return "HalReadSMBusValue";

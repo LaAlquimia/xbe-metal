@@ -1,0 +1,17 @@
+{
+  "name": "xbe-metal Dev Container (C++20 & WebAssembly)",
+  "image": "mcr.microsoft.com/devcontainers/cpp:1-ubuntu-24.04",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {}
+  },
+  "postCreateCommand": "cmake -B build && cmake --build build && ctest --test-dir build --output-on-failure",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools",
+        "ms-vscode.cmake-tools",
+        "llvm-vs-code-extensions.vscode-clangd"
+      ]
+    }
+  }
+}

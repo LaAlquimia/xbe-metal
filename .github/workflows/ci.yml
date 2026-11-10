@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  macos-metal:
+    name: macOS (Apple Silicon + Metal)
+    runs-on: macos-14
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure CMake (macOS Metal)
+        run: cmake -B build -DTARGET_PLATFORM=macOS -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build all targets
+        run: cmake --build build -j$(sysctl -n hw.ncpu)
+
+      - name: Run CTest suite (XBE Parser + x86 Recompiler + HLE Kernel)
+        run: ctest --test-dir build --output-on-failure -V
+
+      - name: Generate and inspect sample homebrew XBE
+        run: |
+          ./build/test_xbe_pipeline --write-sample build/homebrew_hello.xbe
+          ./build/xbe-dump --imports build/homebrew_hello.xbe
+          ./build/xbe-recomp --disasm build/homebrew_hello.xbe -o build/recompiled_entry.cpp
+
+  webassembly-webgpu:
+    name: WebAssembly (Emscripten + WebGPU)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Emscripten SDK
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: latest
+
+      - name: Configure CMake (Wasm)
+        run: emcmake cmake -B build-web -DTARGET_PLATFORM=Wasm -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build Wasm targets
+        run: cmake --build build-web -j$(nproc)
