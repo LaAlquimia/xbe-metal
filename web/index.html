@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>xbe-metal // Next-Gen Xbox WebAssembly & WebGPU Runtime</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700;800&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --xbox-green: #00ff66;
+            --xbox-glow: rgba(0, 255, 102, 0.45);
+            --xbox-dark-green: #0a3d1b;
+            --bg-dark: #07090b;
+            --panel-bg: rgba(13, 17, 23, 0.88);
+            --border-color: rgba(0, 255, 102, 0.28);
+            --text-dim: #7d8590;
+            --text-bright: #e6edf3;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-bright);
+            font-family: 'JetBrains Mono', monospace;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(0, 255, 102, 0.1) 0%, transparent 65%),
+                linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+            background-size: 100% 100%, 32px 32px, 32px 32px;
+        }
+
+        /* Top Header */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 32px;
+            background: var(--panel-bg);
+            border-bottom: 1px solid var(--border-color);
+            backdrop-filter: blur(14px);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-logo {
+            width: 36px;
+            height: 36px;
+            background: radial-gradient(circle, var(--xbox-green) 0%, #003311 75%);
+            border: 2px solid var(--xbox-green);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 18px;
+            color: #000;
+            box-shadow: 0 0 18px var(--xbox-glow);
+        }
+
+        .brand-title {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 22px;
+            letter-spacing: 2px;
+            color: #fff;
+            text-transform: uppercase;
+        }
+
+        .brand-title span {
+            color: var(--xbox-green);
+            text-shadow: 0 0 12px var(--xbox-glow);
+        }
+
+        .system-tags {
+            display: flex;
+            gap: 10px;
+        }
+
+        .badge {
+            background: rgba(0, 255, 102, 0.08);
+            border: 1px solid var(--xbox-green);
+            color: var(--xbox-green);
+            font-size: 11px;
+            padding: 5px 12px;
+            border-radius: 4px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            box-shadow: 0 0 10px rgba(0, 255, 102, 0.2);
+        }
+
+        /* Main Container */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 1440px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 24px;
+            gap: 20px;
+        }
+
+        /* HUD Row */
+        .hud-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+        }
+
+        .hud-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            padding: 16px 20px;
+            border-radius: 6px;
+            position: relative;
+        }
+
+        .hud-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--xbox-green);
+            box-shadow: 0 0 10px var(--xbox-glow);
+        }
+
+        .hud-label {
+            font-size: 11px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 6px;
+        }
+
+        .hud-value {
+            font-size: 19px;
+            font-weight: 700;
+            color: var(--xbox-green);
+            text-shadow: 0 0 10px rgba(0, 255, 102, 0.35);
+        }
+
+        /* Viewport Section */
+        .viewport-wrapper {
+            position: relative;
+            background: #000;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 0 35px rgba(0, 0, 0, 0.85), inset 0 0 25px rgba(0, 255, 102, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 480px;
+        }
+
+        canvas#canvas {
+            display: block;
+            width: 100%;
+            max-height: 720px;
+            aspect-ratio: 16 / 9;
+            background: #030405;
+        }
+
+        /* Scanlines Overlay */
+        .scanlines {
+            pointer-events: none;
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.3) 50%);
+            background-size: 100% 4px;
+            opacity: 0.7;
+        }
+
+        /* Drag & Drop Zone */
+        .dropzone {
+            border: 2px dashed rgba(0, 255, 102, 0.4);
+            background: rgba(0, 255, 102, 0.03);
+            border-radius: 8px;
+            padding: 32px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .dropzone:hover, .dropzone.dragover {
+            border-color: var(--xbox-green);
+            background: rgba(0, 255, 102, 0.08);
+            box-shadow: 0 0 25px rgba(0, 255, 102, 0.25);
+        }
+
+        .dropzone-icon {
+            font-size: 36px;
+            margin-bottom: 12px;
+        }
+
+        .dropzone-text {
+            font-size: 15px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 1px;
+        }
+
+        .dropzone-sub {
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-top: 6px;
+        }
+
+        /* Controls bar */
+        .toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            padding: 12px 20px;
+            border-radius: 6px;
+        }
+
+        .btn {
+            background: rgba(0, 255, 102, 0.12);
+            border: 1px solid var(--xbox-green);
+            color: var(--xbox-green);
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 8px 18px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn:hover {
+            background: var(--xbox-green);
+            color: #000;
+            box-shadow: 0 0 14px var(--xbox-glow);
+        }
+
+        /* Terminal Logs */
+        .terminal-panel {
+            background: #020304;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 6px;
+            padding: 14px 18px;
+            height: 150px;
+            overflow-y: auto;
+            font-size: 12px;
+            line-height: 1.6;
+            color: #8b949e;
+        }
+
+        .log-entry {
+            margin-bottom: 2px;
+        }
+        .log-entry.info { color: var(--xbox-green); }
+        .log-entry.warn { color: #f2cc60; }
+        .log-entry.error { color: #ff7b72; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="brand">
+            <div class="brand-logo">X</div>
+            <div class="brand-title">xbe-<span>metal</span></div>
+        </div>
+        <div class="system-tags">
+            <span class="badge" id="gpu-badge">Probing WebGPU...</span>
+            <span class="badge">WebAssembly</span>
+            <span class="badge">Direct3D 8 HLE</span>
+        </div>
+    </header>
+
+    <main>
+        <!-- HUD Indicators -->
+        <section class="hud-grid">
+            <div class="hud-card">
+                <div class="hud-label">System State</div>
+                <div class="hud-value" id="status-val">READY</div>
+            </div>
+            <div class="hud-card">
+                <div class="hud-label">Current Title</div>
+                <div class="hud-value" id="title-val">STANDBY DEMO</div>
+            </div>
+            <div class="hud-card">
+                <div class="hud-label">FPS (GPU / Canvas)</div>
+                <div class="hud-value" id="fps-val">60.0</div>
+            </div>
+            <div class="hud-card">
+                <div class="hud-label">Allocated RAM</div>
+                <div class="hud-value" id="ram-val">64 MB NV2A</div>
+            </div>
+        </section>
+
+        <!-- Canvas Viewport -->
+        <div class="viewport-wrapper">
+            <canvas id="canvas" tabindex="-1"></canvas>
+            <div class="scanlines" id="scanlines"></div>
+        </div>
+
+        <!-- Drag & Drop Zone -->
+        <div class="dropzone" id="dropzone">
+            <div class="dropzone-icon">💿</div>
+            <div class="dropzone-text">DRAG & DROP ORIGINAL XBOX (.XBE) BINARY HERE</div>
+            <div class="dropzone-sub">Click to select file from disk (default.xbe)</div>
+            <input type="file" id="file-input" style="display: none;" accept=".xbe">
+        </div>
+
+        <!-- Toolbar -->
+        <div class="toolbar">
+            <div style="font-size: 12px; color: var(--text-dim);" id="file-info">
+                Ready for binary loading. Running interactive 3D gem hardware demo.
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn" id="btn-scanlines">Toggle CRT</button>
+                <button class="btn" id="btn-fullscreen">Fullscreen</button>
+            </div>
+        </div>
+
+        <!-- Terminal Output -->
+        <div class="terminal-panel" id="terminal">
+            <div class="log-entry info">[xbe-metal] Interactive WebAssembly & WebGPU Portal loaded.</div>
+            <div class="log-entry info">[xbe-metal] Ready to mount Xbox executables and shaders.</div>
+        </div>
+    </main>
+
+    <script src="web_runner.js"></script>
+    <script>
+        document.getElementById('btn-fullscreen').addEventListener('click', () => {
+            const c = document.getElementById('canvas');
+            if (c.requestFullscreen) c.requestFullscreen();
+        });
+
+        document.getElementById('btn-scanlines').addEventListener('click', () => {
+            const s = document.getElementById('scanlines');
+            s.style.display = s.style.display === 'none' ? 'block' : 'none';
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>xbe-metal // WebAssembly & WebGPU Runtime</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700;800&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --xbox-green: #00ff66;
+            --xbox-glow: rgba(0, 255, 102, 0.45);
+            --xbox-dark-green: #0a3d1b;
+            --bg-dark: #07090b;
+            --panel-bg: rgba(13, 17, 23, 0.85);
+            --border-color: rgba(0, 255, 102, 0.25);
+            --text-dim: #7d8590;
+            --text-bright: #e6edf3;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-bright);
+            font-family: 'JetBrains Mono', monospace;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(0, 255, 102, 0.08) 0%, transparent 60%),
+                linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+            background-size: 100% 100%, 32px 32px, 32px 32px;
+        }
+
+        /* Top Header */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 28px;
+            background: var(--panel-bg);
+            border-bottom: 1px solid var(--border-color);
+            backdrop-filter: blur(12px);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-logo {
+            width: 32px;
+            height: 32px;
+            background: radial-gradient(circle, var(--xbox-green) 0%, transparent 70%);
+            border: 2px solid var(--xbox-green);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 16px;
+            color: #000;
+            box-shadow: 0 0 16px var(--xbox-glow);
+        }
+
+        .brand-title {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 20px;
+            letter-spacing: 2px;
+            color: #fff;
+            text-transform: uppercase;
+        }
+
+        .brand-title span {
+            color: var(--xbox-green);
+            text-shadow: 0 0 10px var(--xbox-glow);
+        }
+
+        .system-tags {
+            display: flex;
+            gap: 10px;
+        }
+
+        .badge {
+            background: rgba(0, 255, 102, 0.1);
+            border: 1px solid var(--xbox-green);
+            color: var(--xbox-green);
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            box-shadow: 0 0 8px rgba(0, 255, 102, 0.2);
+        }
+
+        /* Main Container */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 24px;
+            gap: 20px;
+        }
+
+        /* HUD Row */
+        .hud-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 14px;
+        }
+
+        .hud-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            padding: 14px 18px;
+            border-radius: 6px;
+            position: relative;
+        }
+
+        .hud-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--xbox-green);
+            box-shadow: 0 0 8px var(--xbox-glow);
+        }
+
+        .hud-label {
+            font-size: 11px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+        }
+
+        .hud-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--xbox-green);
+            text-shadow: 0 0 10px rgba(0, 255, 102, 0.3);
+        }
+
+        /* Viewport Section */
+        .viewport-wrapper {
+            position: relative;
+            background: #000;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 255, 102, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 480px;
+        }
+
+        canvas#canvas {
+            display: block;
+            width: 100%;
+            max-height: 720px;
+            aspect-ratio: 16 / 9;
+            background: #030405;
+        }
+
+        /* Scanlines Overlay */
+        .scanlines {
+            pointer-events: none;
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            background-size: 100% 4px;
+            opacity: 0.6;
+        }
+
+        /* Drag & Drop Zone */
+        .dropzone {
+            border: 2px dashed rgba(0, 255, 102, 0.4);
+            background: rgba(0, 255, 102, 0.03);
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .dropzone:hover, .dropzone.dragover {
+            border-color: var(--xbox-green);
+            background: rgba(0, 255, 102, 0.08);
+            box-shadow: 0 0 20px rgba(0, 255, 102, 0.2);
+        }
+
+        .dropzone-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .dropzone-text {
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .dropzone-sub {
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
+
+        /* Controls bar */
+        .toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            padding: 10px 18px;
+            border-radius: 6px;
+        }
+
+        .btn {
+            background: rgba(0, 255, 102, 0.12);
+            border: 1px solid var(--xbox-green);
+            color: var(--xbox-green);
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn:hover {
+            background: var(--xbox-green);
+            color: #000;
+            box-shadow: 0 0 12px var(--xbox-glow);
+        }
+
+        /* Terminal Logs */
+        .terminal-panel {
+            background: #020304;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            padding: 12px 16px;
+            height: 140px;
+            overflow-y: auto;
+            font-size: 12px;
+            line-height: 1.5;
+            color: #8b949e;
+        }
+
+        .log-entry {
+            margin-bottom: 2px;
+        }
+        .log-entry.info { color: var(--xbox-green); }
+        .log-entry.warn { color: #f2cc60; }
+        .log-entry.error { color: #ff7b72; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="brand">
+            <div class="brand-logo">X</div>
+            <div class="brand-title">xbe-<span>metal</span></div>
+        </div>
+        <div class="system-tags">
+            <span class="badge" id="gpu-badge">WebGPU: Active</span>
+            <span class="badge">ARM64 / Wasm</span>
+            <span class="badge">HLE C++20</span>
+        </div>
+    </header>
+
+    <main>
+        <!-- HUD Indicators -->
+        <section class="hud-grid">
+            <div class="hud-card">
+                <div class="hud-label">System State</div>
+                <div class="hud-value" id="status-val">READY</div>
+            </div>
+            <div class="hud-card">
+                <div class="hud-label">Current Title</div>
+                <div class="hud-value" id="title-val">STANDBY DEMO</div>
+            </div>
+            <div class="hud-card">
+                <div class="hud-label">FPS (WebGPU / Canvas)</div>
+                <div class="hud-value" id="fps-val">60.0</div>
+            </div>
+            <div class="hud-card">
+                <div class="hud-label">Xbox Memory Map</div>
+                <div class="hud-value" id="ram-val">64 MB RAM</div>
+            </div>
+        </section>
+
+        <!-- Canvas Viewport -->
+        <div class="viewport-wrapper">
+            <canvas id="canvas" oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
+            <div class="scanlines" id="scanlines"></div>
+        </div>
+
+        <!-- Drag & Drop Zone -->
+        <div class="dropzone" id="dropzone">
+            <div class="dropzone-icon">📁</div>
+            <div class="dropzone-text">DRAG & DROP ORIGINAL XBOX (.XBE) BINARY HERE</div>
+            <div class="dropzone-sub">or click to browse local files (default.xbe)</div>
+            <input type="file" id="file-input" style="display: none;" accept=".xbe">
+        </div>
+
+        <!-- Toolbar -->
+        <div class="toolbar">
+            <div style="font-size: 12px; color: var(--text-dim);" id="file-info">
+                No custom binary loaded. Running hardware acceleration demo loop.
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn" id="btn-scanlines">Toggle CRT</button>
+                <button class="btn" id="btn-fullscreen">Fullscreen</button>
+            </div>
+        </div>
+
+        <!-- Terminal Output -->
+        <div class="terminal-panel" id="terminal">
+            <div class="log-entry info">[xbe-metal] Multiplatform Runtime Shell initialized.</div>
+            <div class="log-entry info">[xbe-metal] Ready to mount Xbox executables and shaders.</div>
+        </div>
+    </main>
+
+    <script>
+        // Emscripten Module Bridge Setup
+        var Module = {
+            preRun: [],
+            postRun: [],
+            print: function(text) {
+                console.log("[Wasm Out] " + text);
+                addLog(text, 'info');
+            },
+            printErr: function(text) {
+                console.error("[Wasm Err] " + text);
+                addLog(text, 'error');
+            },
+            canvas: (function() {
+                var c = document.getElementById('canvas');
+                return c;
+            })(),
+            setStatus: function(text) {
+                if (text) {
+                    document.getElementById('status-val').innerText = text.toUpperCase();
+                } else {
+                    document.getElementById('status-val').innerText = "RUNNING";
+                }
+            }
+        };
+
+        function addLog(msg, type) {
+            const term = document.getElementById('terminal');
+            if (!term) return;
+            const div = document.createElement('div');
+            div.className = 'log-entry ' + (type || 'info');
+            div.textContent = msg;
+            term.appendChild(div);
+            term.scrollTop = term.scrollHeight;
+        }
+
+        // Fullscreen & CRT Scanline Handlers
+        document.getElementById('btn-fullscreen').addEventListener('click', () => {
+            const c = document.getElementById('canvas');
+            if (c.requestFullscreen) c.requestFullscreen();
+        });
+
+        document.getElementById('btn-scanlines').addEventListener('click', () => {
+            const s = document.getElementById('scanlines');
+            s.style.display = s.style.display === 'none' ? 'block' : 'none';
+        });
+
+        // Drag & Drop Handler
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('file-input');
+
+        dropzone.addEventListener('click', () => fileInput.click());
+
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('dragover');
+        });
+
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('dragover');
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            addLog("Processing file: " + file.name + " (" + (file.size/1024).toFixed(1) + " KB)...", 'info');
+            document.getElementById('file-info').innerText = "Mounted: " + file.name + " (" + (file.size/1024).toFixed(1) + " KB)";
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const buffer = new Uint8Array(evt.target.result);
+                // Check XBE Magic ("XBEH")
+                if (buffer.length >= 4 &&
+                    buffer[0] === 0x58 && buffer[1] === 0x42 &&
+                    buffer[2] === 0x45 && buffer[3] === 0x48) {
+                    addLog("Valid Xbox Executable header detected (Magic: XBEH)!", 'info');
+                    document.getElementById('title-val').innerText = file.name.toUpperCase();
+                    if (typeof FS !== 'undefined') {
+                        try {
+                            FS.createDataFile('/', 'default.xbe', buffer, true, true, true);
+                            addLog("Mounted " + file.name + " to virtual root /default.xbe", 'info');
+                        } catch(err) {
+                            console.warn("FS mount: " + err);
+                        }
+                    }
+                } else {
+                    addLog("Warning: File does not have standard 'XBEH' magic bytes.", 'warn');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+    </script>
+
+    <!-- Emscripten will inject compiled WebAssembly glue script here -->
+    {{{ SCRIPT }}}
+</body>
+</html>
