@@ -7,14 +7,14 @@ on:
     branches: [ main ]
 
 jobs:
-  macos-metal:
-    name: macOS (Apple Silicon + Metal)
-    runs-on: macos-14
+  macos-arm64:
+    name: macOS (ARM64 Native)
+    runs-on: macos-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Configure CMake (macOS Metal)
+      - name: Configure CMake (macOS)
         run: cmake -B build -DTARGET_PLATFORM=macOS -DCMAKE_BUILD_TYPE=Release
 
       - name: Build all targets
