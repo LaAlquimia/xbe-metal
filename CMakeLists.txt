@@ -58,7 +58,7 @@ if(TARGET_PLATFORM STREQUAL "macOS")
 elseif(TARGET_PLATFORM STREQUAL "Wasm")
     message(STATUS "Configuring for WebAssembly with Emscripten")
     add_definitions(-DXBE_TARGET_WASM)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_WEBGPU=1 -s ALLOW_MEMORY_GROWTH=1")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s ALLOW_MEMORY_GROWTH=1")
 
     add_library(xbe_runtime STATIC
         src/runtime/gpu/webgpu/webgpu_device.cpp
@@ -92,7 +92,7 @@ elseif(TARGET_PLATFORM STREQUAL "Wasm")
     target_link_libraries(xbe-runner PRIVATE xbe_runtime)
     set_target_properties(xbe-runner PROPERTIES
         SUFFIX ".html"
-        LINK_FLAGS "-s WASM=1 -s USE_WEBGPU=1 -s EXPORTED_RUNTIME_METHODS=['ccall','cwrap'] --shell-file ${CMAKE_CURRENT_SOURCE_DIR}/web/shell.html"
+        LINK_FLAGS "-s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_RUNTIME_METHODS=['ccall','cwrap'] --shell-file ${CMAKE_CURRENT_SOURCE_DIR}/web/shell.html"
     )
 endif()
 

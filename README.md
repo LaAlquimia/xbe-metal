@@ -5,24 +5,22 @@
 
 <!-- Row 1: CI, Codespaces, Release & License -->
 [![CI](https://github.com/LaAlquimia/xbe-metal/actions/workflows/ci.yml/badge.svg)](https://github.com/LaAlquimia/xbe-metal/actions/workflows/ci.yml)
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/LaAlquimia/xbe-metal)
-[![Version](https://img.shields.io/badge/version-0.1.0--alpha-00ff66?style=flat-square)](https://github.com/LaAlquimia/xbe-metal/releases)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://github.com/LaAlquimia/xbe-metal/pulls)
+[![Codespaces](https://img.shields.io/badge/GitHub-Codespaces-181717?logo=github&logoColor=white)](https://codespaces.new/LaAlquimia/xbe-metal)
+[![Version](https://img.shields.io/badge/version-0.1.0--alpha-00c853)](https://github.com/LaAlquimia/xbe-metal/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/LaAlquimia/xbe-metal/pulls)
 
 <!-- Row 2: Languages, Build System & Toolchains -->
-[![Standard: C++20](https://img.shields.io/badge/C%2B%2B-20-00599C?style=flat-square&logo=cplusplus&logoColor=white)](https://en.cppreference.com/w/cpp/20)
-[![Objective-C++](https://img.shields.io/badge/Objective--C%2B%2B-Metal%20Bridge-333333?style=flat-square&logo=apple&logoColor=white)](https://developer.apple.com/metal/)
-[![CMake: 3.20+](https://img.shields.io/badge/CMake-3.20%2B-064F8C?style=flat-square&logo=cmake&logoColor=white)](https://cmake.org/)
-[![Compiler: Apple Clang](https://img.shields.io/badge/Compiler-Apple%20Clang%20%2F%20LLVM-262D3A?style=flat-square&logo=llvm&logoColor=white)](https://clang.llvm.org/)
-[![Toolchain: Emscripten](https://img.shields.io/badge/Toolchain-Emscripten-654FF0?style=flat-square&logo=webassembly&logoColor=white)](https://emscripten.org/)
+[![Standard: C++20](https://img.shields.io/badge/C%2B%2B-20-00599C?logo=cplusplus&logoColor=white)](https://en.cppreference.com/w/cpp/20)
+[![CMake: 3.20+](https://img.shields.io/badge/CMake-3.20%2B-064F8C?logo=cmake&logoColor=white)](https://cmake.org/)
+[![Compiler: Clang / LLVM](https://img.shields.io/badge/Compiler-Clang%20%2F%20LLVM-262D3A?logo=llvm&logoColor=white)](https://clang.llvm.org/)
+[![Toolchain: Emscripten](https://img.shields.io/badge/Toolchain-Emscripten-654FF0?logo=webassembly&logoColor=white)](https://emscripten.org/)
 
 <!-- Row 3: Architectures, Platforms & GPU Backends -->
-[![Guest ISA: x86-32 Pentium III](https://img.shields.io/badge/Guest%20ISA-x86--32%20(Pentium%20III)-107C10?style=flat-square&logo=intel&logoColor=white)](#%EF%B8%8F-architecture)
-[![Host ISA: ARM64 Apple Silicon](https://img.shields.io/badge/Host%20ISA-ARM64%20(M1--M5)-000000?style=flat-square&logo=apple&logoColor=white)](#%EF%B8%8F-architecture)
-[![GPU: Apple Metal](https://img.shields.io/badge/GPU%20Backend-Apple%20Metal%20(MSL)-555555?style=flat-square&logo=apple&logoColor=white)](#%EF%B8%8F-architecture)
-[![GPU: WebGPU / Canvas](https://img.shields.io/badge/Web%20Backend-WebGPU%20%2F%20Canvas-FF5722?style=flat-square&logo=html5&logoColor=white)](#%EF%B8%8F-architecture)
-[![Target: WebAssembly](https://img.shields.io/badge/Target-WebAssembly%20(Wasm32)-654FF0?style=flat-square&logo=webassembly&logoColor=white)](#3-building-for-webassembly-webgpu)
+[![Guest ISA: x86-32](https://img.shields.io/badge/Guest%20ISA-x86--32-107C10)](#-architecture)
+[![Host ISA: ARM64](https://img.shields.io/badge/Host%20ISA-ARM64%20(Darwin)-333333?logo=apple&logoColor=white)](#-architecture)
+[![GPU: WebGPU / WGSL](https://img.shields.io/badge/GPU-WebGPU%20%2F%20Native-005A9C?logo=w3c&logoColor=white)](#-architecture)
+[![Target: WebAssembly](https://img.shields.io/badge/Target-WebAssembly%20(Wasm32)-654FF0?logo=webassembly&logoColor=white)](#3-building-for-webassembly-webgpu)
 
 ---
 
