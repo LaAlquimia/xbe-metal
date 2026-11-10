@@ -1,7 +1,10 @@
 # xbe-metal 🍏⚙️
 
-> **Static Recompiler & Multiplatform Runtime for Original Xbox Binaries (`.xbe`)**  
-> Ahead-of-Time `x86-32` ➔ `C++20` translation targeting **Apple Silicon (macOS / Metal)** and **WebAssembly (WebGPU / Canvas)**.
+> **Bare-Metal Static Recompiler & Multiplatform Runtime for `.xbe` Binaries**  
+> Ahead-of-Time `x86-32` ➔ `C++20` translation targeting **macOS (ARM64)** and **WebAssembly (WebGPU / Canvas)**.
+
+> [!WARNING]
+> **Legal & Clean-Room Disclaimer:** `xbe-metal` (*bare-metal* static recompiler) is an independent, clean-room educational and software preservation project. It is **not** affiliated with, endorsed by, or sponsored by Apple Inc. or Microsoft Corporation. This repository contains **zero** proprietary BIOS, SDKs, or copyrighted game code—users must provide their own legally obtained executables. **Apple®** and **macOS®** are registered trademarks of Apple Inc. **Xbox®** is a registered trademark of Microsoft Corporation.
 
 <!-- Row 1: CI, Codespaces, Release & License -->
 [![CI](https://github.com/LaAlquimia/xbe-metal/actions/workflows/ci.yml/badge.svg)](https://github.com/LaAlquimia/xbe-metal/actions/workflows/ci.yml)
@@ -17,22 +20,23 @@
 [![Toolchain: Emscripten](https://img.shields.io/badge/Toolchain-Emscripten-654FF0?logo=webassembly&logoColor=white)](https://emscripten.org/)
 
 <!-- Row 3: Architectures, Platforms & GPU Backends -->
-[![Guest ISA: x86-32](https://img.shields.io/badge/Guest%20ISA-x86--32-107C10)](#-architecture)
+[![Execution: Bare-Metal AOT](https://img.shields.io/badge/Execution-Bare--Metal%20AOT-107C10)](#-architecture)
+[![Guest ISA: x86-32](https://img.shields.io/badge/Guest%20ISA-x86--32-2ea44f)](#-architecture)
 [![Host ISA: ARM64](https://img.shields.io/badge/Host%20ISA-ARM64%20(Darwin)-333333?logo=apple&logoColor=white)](#-architecture)
-[![GPU: WebGPU / WGSL](https://img.shields.io/badge/GPU-WebGPU%20%2F%20Native-005A9C?logo=w3c&logoColor=white)](#-architecture)
+[![GPU: WebGPU / Native](https://img.shields.io/badge/GPU-WebGPU%20%2F%20Native-005A9C?logo=w3c&logoColor=white)](#-architecture)
 [![Target: WebAssembly](https://img.shields.io/badge/Target-WebAssembly%20(Wasm32)-654FF0?logo=webassembly&logoColor=white)](#3-building-for-webassembly-webgpu)
 
 ---
 
 ## 📖 Overview
 
-`xbe-metal` is a high-performance static recompilation framework and runtime environment designed to take original Xbox executables (`.xbe`) and run them natively on modern devices without traditional emulation overhead.
+`xbe-metal` is a high-performance **bare-metal** static recompilation framework and runtime environment designed to take `.xbe` executables and run them directly on modern hardware without traditional virtual machine or emulator overhead.
 
 Instead of interpreting x86 machine code inside an emulator VM at runtime, `xbe-metal`:
-1. **Parses & Analyzes** the Xbox executable (`.xbe`), decrypting Retail/Debug XOR keys and extracting sections, headers, certificates, and kernel import thunks.
-2. **Statically Recompiles** x86-32 (Intel Pentium III) machine code ahead-of-time into clean, portable C++20 translation units (`xbe-recomp`).
-3. **Executes on Modern Platforms** with a lightweight high-level emulation (HLE) runtime:
-   - **macOS (Apple Silicon):** Native ARM64 binary with direct **Apple Metal** graphics and **CoreAudio**.
+1. **Parses & Analyzes** the `.xbe` binary, decrypting Retail/Debug XOR keys and extracting sections, headers, certificates, and kernel import thunks.
+2. **Statically Recompiles** `x86-32` machine code ahead-of-time into clean, portable C++20 translation units (`xbe-recomp`).
+3. **Executes Bare-Metal on Modern Platforms** with a lightweight high-level emulation (HLE) runtime:
+   - **macOS (ARM64):** Native bare-metal ARM64 executable with hardware-accelerated GPU rendering and CoreAudio.
    - **WebAssembly (Wasm):** In-browser execution powered by **WebGPU** / HTML5 Canvas and **WebAudio**.
 
 ---
@@ -60,14 +64,14 @@ Instead of interpreting x86 machine code inside an emulator VM at runtime, `xbe-
             ▼                                 ▼
    [ Native macOS Build ]            [ WebAssembly Build ]
    - Architecture: ARM64             - Architecture: wasm32 / wasm64
-   - Graphics: Metal (MSL)           - Graphics: WebGPU / Canvas
+   - Execution: Bare-Metal Native    - Graphics: WebGPU / Canvas
    - Memory: 64MB/128MB Unified      - Memory: Shared / Linear Wasm
-   - Compiler: Apple Clang           - Compiler: Emscripten (emcc)
+   - Compiler: Clang / LLVM          - Compiler: Emscripten (emcc)
 ```
 
 ---
 
-## 🚀 Quick Start (macOS / Apple Silicon)
+## 🚀 Quick Start (macOS / ARM64)
 
 ### 1. Build & Run the Automated Pipeline Test
 
@@ -98,7 +102,7 @@ ctest --test-dir build --output-on-failure -V
 # 2. Disassemble x86 instructions and emit C++20 source code
 ./build/xbe-recomp --disasm build/homebrew_hello.xbe -o build/recompiled_entry.cpp
 
-# 3. Launch the native Apple Metal runtime
+# 3. Launch the native hardware runtime
 ./build/xbe-runner build/homebrew_hello.xbe
 ```
 
@@ -123,7 +127,7 @@ npx serve web/
 
 ```
 xbe-metal/
-├── .github/workflows/ci.yml    # Automated macOS (Metal) & WebAssembly CI
+├── .github/workflows/ci.yml    # Automated macOS (ARM64) & WebAssembly CI
 ├── CMakeLists.txt              # Root CMake build configuration
 ├── LICENSE                     # MIT License
 ├── README.md                   # Project documentation
@@ -133,8 +137,6 @@ xbe-metal/
 │   └── runtime/
 │       ├── core/               # 64MB/128MB unified memory map & kernel HLE
 │       └── gpu/                # Cross-platform GPU abstraction (IRenderDevice)
-│           ├── metal/          # Apple Metal backend (Objective-C++ / MSL)
-│           └── webgpu/         # WebGPU / Canvas backend (WebAssembly)
 ├── src/
 │   ├── xbe/                    # XBE parser implementation
 │   ├── recompiler/             # Ahead-of-time x86 ➔ C++20 translation engine
@@ -154,4 +156,4 @@ xbe-metal/
 
 ## ⚖️ Legal Disclaimer
 
-`xbe-metal` is an independent, clean-room educational and preservation research project. It does **not** contain any proprietary Microsoft Xbox BIOS, SDK, or copyrighted game code. Users must supply their own legally dumped games. Xbox is a registered trademark of Microsoft Corporation. Apple and Metal are trademarks of Apple Inc.
+`xbe-metal` is an independent, clean-room educational and preservation research project. The term *"metal"* in `xbe-metal` refers strictly to **bare-metal** ahead-of-time native code execution. This project does **not** contain any proprietary BIOS, SDK, or copyrighted game code. Users must supply their own legally dumped games. **Apple®** and **macOS®** are registered trademarks of Apple Inc. **Xbox®** is a registered trademark of Microsoft Corporation.
